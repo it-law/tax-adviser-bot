@@ -15,9 +15,14 @@ class Config:
     # Exa.ai
     EXA_API_KEY: str | None = os.getenv("EXA_API_KEY")
 
-    # ✅ ИСПРАВЛЕНИЕ: Gemini 2.5 Flash Lite Preview теперь по умолчанию
-    # Это дешевая и быстрая модель, которая не должна давать частые 429
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "google/gemini-2.5-flash-lite-preview-09-2025")
+    # Основная модель
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "google/gemini-2.0-flash-001")
+    # Запасные модели (если основная недоступна)
+    MODEL_FALLBACK: str | None = os.getenv("MODEL_FALLBACK")
+    _fallbacks_raw: str = os.getenv("MODEL_FALLBACKS", "")
+    MODEL_FALLBACKS: list[str] = [m.strip() for m in _fallbacks_raw.split(",") if m.strip()]
+    if MODEL_FALLBACK:
+        MODEL_FALLBACKS = [MODEL_FALLBACK] + MODEL_FALLBACKS
 
     # Пути к файлам законов
     DATA_DIR: str = "data"
