@@ -7,6 +7,7 @@ import logging
 import shutil
 import subprocess
 import tempfile
+import re
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
@@ -169,6 +170,19 @@ def _split_message(text: str, limit: int = TELEGRAM_MAX_LEN) -> list[str]:
         parts.append(remaining)
     return parts
 
+def _extract_urls(text: str) -> list[str]:
+    if not text:
+        return []
+    urls = re.findall(r"https?://\\S+", text)
+    cleaned: list[str] = []
+    seen = set()
+    for url in urls:
+        u = url.rstrip(").,;!?:\"'”»")
+        if u not in seen:
+            seen.add(u)
+            cleaned.append(u)
+    return cleaned
+
 async def process_query(message: Message, user_query: str, extra_context: str = ""):
     user_id = message.from_user.id
     status_msg = await message.answer("⏳ Принял запрос, начинаю анализ...", parse_mode=None)
@@ -239,6 +253,14 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
             )
         except asyncio.TimeoutError:
             answer = "⚠️ Модель не успела ответить вовремя. Попробуйте упростить вопрос."
+
+        urls = _extract_urls(web_results if isinstance(web_results, str) else "")
+        if urls and "источники" not in answer.lower():
+            answer = (
+                answer.rstrip()
+                + "\n\nИсточники:\n"
+                + "\n".join(f"- {u}" for u in urls)
+            )
         
         conversation_storage.add_message(user_id, "user", user_query)
         conversation_storage.add_message(user_id, "assistant", answer)
