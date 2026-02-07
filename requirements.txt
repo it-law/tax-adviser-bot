@@ -1,0 +1,8 @@
+aiogram==3.13.0
+aiohttp==3.10.5
+python-dotenv==1.0.1
+openai==1.52.0
+exa-py==1.1.0
+# Важно: фиксируем версию httpx, где еще работает аргумент proxies
+httpx==0.24.1
+httpcore==0.17.3
