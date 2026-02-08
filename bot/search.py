@@ -21,13 +21,14 @@ class TavilySearch:
             return ""
 
         logger.info(f"Tavily search triggered for: {query}")
+        country = getattr(config, "TAVILY_COUNTRY", "ru")
         payload: dict[str, Any] = {
             "query": query,
             "search_depth": config.TAVILY_SEARCH_DEPTH,
             "max_results": config.TAVILY_MAX_RESULTS,
             "include_domains": config.TAVILY_INCLUDE_DOMAINS,
             "topic": "general",
-            "country": config.TAVILY_COUNTRY,
+            "country": country,
             "include_answer": False,
             "include_raw_content": False,
         }
