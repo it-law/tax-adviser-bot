@@ -22,7 +22,7 @@ async def main():
     # <-- Вот здесь изменение: используем default=DefaultBotProperties(...)
     bot = Bot(
         token=config.TELEGRAM_BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     
     dp = Dispatcher()
@@ -36,4 +36,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

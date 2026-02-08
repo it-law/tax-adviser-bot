@@ -22,7 +22,7 @@ async def on_shutdown(app):
 async def main():
     bot = Bot(
         token=config.TELEGRAM_BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     
     dp = Dispatcher()

@@ -59,8 +59,7 @@ async def cmd_start(message: Message):
         "• Налог на имущество для физлиц в моем случае\n"
         "• У меня ИП на УСН, что с НДС?\n"
         "• Что грозит за просрочку декларации?\n\n"
-        "Команда: /clear — очистить контекст.",
-        parse_mode=None
+        "Команда: /clear — очистить контекст."
     )
 
 @router.message(Command("clear"))
@@ -68,7 +67,7 @@ async def cmd_clear(message: Message):
     conversation_storage.clear_history(message.from_user.id)
     doc_text_by_user.pop(message.from_user.id, None)
     doc_images_by_user.pop(message.from_user.id, None)
-    await message.answer("🧹 Контекст диалога очищен.", parse_mode=None)
+    await message.answer("🧹 Контекст диалога очищен.")
 
 def _safe_trim(text: str, limit: int) -> str:
     if len(text) <= limit:
@@ -185,11 +184,11 @@ def _extract_urls(text: str) -> list[str]:
 
 async def process_query(message: Message, user_query: str, extra_context: str = ""):
     user_id = message.from_user.id
-    status_msg = await message.answer("⏳ Принял запрос, начинаю анализ...", parse_mode=None)
+    status_msg = await message.answer("⏳ Принял запрос, начинаю анализ...")
 
     async def update_status(text):
         try:
-            await status_msg.edit_text(f"⏳ {text}", parse_mode=None)
+            await status_msg.edit_text(f"⏳ {text}")
         except Exception:
             pass
 
@@ -256,11 +255,10 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
 
         urls = _extract_urls(web_results if isinstance(web_results, str) else "")
         if urls and "источники" not in answer.lower():
-            answer = (
-                answer.rstrip()
-                + "\n\nИсточники:\n"
-                + "\n".join(f"- {u}" for u in urls)
+            sources = "<b>Источники:</b><br>" + "<br>".join(
+                f"• <a href=\"{u}\">Источник {i}</a>" for i, u in enumerate(urls, 1)
             )
+            answer = answer.rstrip() + "\n\n" + sources
         
         conversation_storage.add_message(user_id, "user", user_query)
         conversation_storage.add_message(user_id, "assistant", answer)
@@ -271,7 +269,7 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
             pass
 
         for part in _split_message(answer):
-            await message.answer(part, parse_mode=None)
+            await message.answer(part)
 
     except Exception as e:
         logger.error(f"Global handler error: {e}")
@@ -279,7 +277,7 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
             await status_msg.delete()
         except Exception:
             pass
-        await message.answer("⚠️ Произошла ошибка. Попробуйте позже.", parse_mode=None)
+        await message.answer("⚠️ Произошла ошибка. Попробуйте позже.")
 
 @router.message(F.photo)
 async def handle_photo(message: Message):
@@ -299,26 +297,23 @@ async def handle_photo(message: Message):
 
     if caption:
         if image_url:
-            await message.answer("Фото получил. Отвечаю по вашему вопросу.", parse_mode=None)
+            await message.answer("Фото получил. Отвечаю по вашему вопросу.")
             await process_query(message, caption)
         else:
             await message.answer(
                 "Фото получил. Файл слишком большой или не удалось прочитать. "
-                "Пришлите более легкое изображение.",
-                parse_mode=None,
+                "Пришлите более легкое изображение."
             )
             await process_query(message, caption)
         return
 
     if image_url:
         await message.answer(
-            "Фото получил. Сформулируйте вопрос — отвечу с учетом изображения.",
-            parse_mode=None,
+            "Фото получил. Сформулируйте вопрос — отвечу с учетом изображения."
         )
     else:
         await message.answer(
-            "Фото получил. Напишите, что именно нужно выяснить, и, если есть текст, перепечатайте ключевые фрагменты.",
-            parse_mode=None,
+            "Фото получил. Напишите, что именно нужно выяснить, и, если есть текст, перепечатайте ключевые фрагменты."
         )
 
 @router.message(F.document)
@@ -332,8 +327,7 @@ async def handle_document(message: Message):
     image_url = ""
     if doc.file_size and doc.file_size > MAX_DOC_BYTES:
         await message.answer(
-            "Документ слишком большой для обработки. Пришлите краткий фрагмент или текстовый файл.",
-            parse_mode=None,
+            "Документ слишком большой для обработки. Пришлите краткий фрагмент или текстовый файл."
         )
     else:
         is_text = mime_type.startswith("text/") or file_name.endswith((".txt", ".md", ".csv"))
@@ -366,9 +360,8 @@ async def handle_document(message: Message):
                 text_context = _safe_trim(text_context, MAX_DOC_CHARS)
                 if not text_context and doc_err == "missing_tool":
                     await message.answer(
-                        "DOC получен, но для чтения нужен `antiword` или `catdoc`. "
-                        "Установите инструмент или пришлите DOCX/текст.",
-                        parse_mode=None,
+                        "DOC получен, но для чтения нужен <code>antiword</code> или <code>catdoc</code>. "
+                        "Установите инструмент или пришлите DOCX/текст."
                     )
             except Exception as e:
                 logger.error(f"DOC download/read error: {e}")
@@ -390,23 +383,21 @@ async def handle_document(message: Message):
         else:
             await message.answer(
                 "Документ получил. Сейчас читаю только текстовые файлы, DOC/DOCX и изображения. "
-                "Если это PDF, пришлите текст или скриншоты страниц.",
-                parse_mode=None,
+                "Если это PDF, пришлите текст или скриншоты страниц."
             )
 
     if caption:
         if text_context:
             doc_text_by_user[message.from_user.id] = text_context
-            await message.answer("Документ получил, отвечаю по вашему вопросу.", parse_mode=None)
+            await message.answer("Документ получил, отвечаю по вашему вопросу.")
             await process_query(message, caption, extra_context=text_context)
         elif doc_images_by_user.get(message.from_user.id):
-            await message.answer("Документ получил. Отвечаю по вашему вопросу.", parse_mode=None)
+            await message.answer("Документ получил. Отвечаю по вашему вопросу.")
             await process_query(message, caption)
         else:
             await message.answer(
                 "Документ получил, но текст не извлечен. Отвечу по вопросу, "
-                "а для точности пришлите текстовые фрагменты.",
-                parse_mode=None,
+                "а для точности пришлите текстовые фрагменты."
             )
             await process_query(message, caption)
         return
@@ -414,18 +405,15 @@ async def handle_document(message: Message):
     if text_context:
         doc_text_by_user[message.from_user.id] = text_context
         await message.answer(
-            "Документ получен. Сформулируйте вопрос по нему — отвечу.",
-            parse_mode=None,
+            "Документ получен. Сформулируйте вопрос по нему — отвечу."
         )
     elif doc_images_by_user.get(message.from_user.id):
         await message.answer(
-            "Документ получен. Сформулируйте вопрос — отвечу с учетом изображений.",
-            parse_mode=None,
+            "Документ получен. Сформулируйте вопрос — отвечу с учетом изображений."
         )
     else:
         await message.answer(
-            "Документ получен. Напишите, что именно нужно выяснить, и приложите текстовые фрагменты.",
-            parse_mode=None,
+            "Документ получен. Напишите, что именно нужно выяснить, и приложите текстовые фрагменты."
         )
 
 @router.message(F.text)
