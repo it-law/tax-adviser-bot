@@ -47,17 +47,31 @@ GENERATING_STATUSES = [
 SEARCH_KEYWORDS = [
     "санкц",
     "ндпи",
+    "налог",
     "изменени",
     "закон",
-    "новост",
     "указ",
     "постановлен",
-    "письмо",
+    "судебн",
     "практик",
-    "источник",
-    "ссылка",
-    "фнс",
+    "нк рф",
     "минфин",
+    "фнс",
+    "доля",
+    "участи",
+    "уставн",
+    "иностранн",
+    "нерезидент",
+    "валютн",
+    "cbr",
+    "центробанк",
+    "письмо",
+    "разъяснен",
+    "льгот",
+    "освобожден",
+    "недвижим",
+    "актив",
+    "прибыл",
 ]
 
 @router.message(CommandStart())
@@ -187,7 +201,7 @@ def needs_web_search(user_query: str) -> bool:
     q = user_query.strip().lower()
     if not q:
         return False
-    if len(q) > 50:
+    if len(q) > 80:
         return True
     return any(word in q for word in SEARCH_KEYWORDS)
 

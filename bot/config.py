@@ -22,6 +22,13 @@ class Config:
         "consultant.ru",
         "nalog.gov.ru",
         "garant.ru",
+        "minfin.gov.ru",
+        "cbr.ru",
+        "klerk.ru",
+        "buh.ru",
+        "nalog-nalog.ru",
+        "advgazeta.ru",
+        "pravovest-audit.ru",
     ]
 
     # Основная модель
