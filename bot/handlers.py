@@ -7,6 +7,7 @@ import logging
 import shutil
 import subprocess
 import tempfile
+from urllib.parse import urlparse
 import re
 from aiogram import Router, F
 from aiogram.types import Message
@@ -193,18 +194,37 @@ def needs_web_search(user_query: str) -> bool:
         return True
     return any(word in q for word in SEARCH_KEYWORDS)
 
-def _extract_urls(text: str) -> list[str]:
+def _short_title(title: str, max_words: int = 4) -> str:
+    t = re.sub(r"[\\s\\-]+", " ", title.strip())
+    if not t:
+        return ""
+    words = t.split()
+    return " ".join(words[:max_words])
+
+def _source_label(title: str, url: str) -> str:
+    t = _short_title(title)
+    if t:
+        return t
+    try:
+        netloc = urlparse(url).netloc
+        return netloc.replace("www.", "") if netloc else "Источник"
+    except Exception:
+        return "Источник"
+
+def _extract_sources(text: str) -> list[tuple[str, str]]:
     if not text:
         return []
-    urls = re.findall(r"https?://\\S+", text)
-    cleaned: list[str] = []
+    sources: list[tuple[str, str]] = []
     seen = set()
-    for url in urls:
+    for title, url in re.findall(r"Источник\\s+\\d+:\\s*([^\\n]+)\\nURL:\\s*(\\S+)", text):
         u = url.rstrip(").,;!?:\"'”»")
-        if u not in seen:
-            seen.add(u)
-            cleaned.append(u)
-    return cleaned
+        t = _short_title(title)
+        key = (t, u)
+        if key in seen:
+            continue
+        seen.add(key)
+        sources.append((t, u))
+    return sources
 
 async def process_query(message: Message, user_query: str, extra_context: str = ""):
     user_id = message.from_user.id
@@ -273,10 +293,10 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
         except asyncio.TimeoutError:
             answer = "⚠️ Модель не успела ответить вовремя. Попробуйте упростить вопрос."
 
-        urls = _extract_urls(web_results if isinstance(web_results, str) else "")
-        if urls and "источники" not in answer.lower():
+        sources_list = _extract_sources(web_results if isinstance(web_results, str) else "")
+        if sources_list and "источники" not in answer.lower():
             sources = "<b>Источники:</b><br>" + "<br>".join(
-                f"• <a href=\"{u}\">Источник {i}</a>" for i, u in enumerate(urls, 1)
+                f"• <a href=\"{u}\">{_source_label(t, u)}</a>" for t, u in sources_list
             )
             answer = answer.rstrip() + "\n\n" + sources
         
