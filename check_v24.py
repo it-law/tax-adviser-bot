@@ -9,7 +9,7 @@ from aiogram.exceptions import TelegramBadRequest
 
 from bot.config import config
 from bot.router import detect_topic
-from bot.search import exa_search
+from bot.search import get_tavily_search
 from bot.llm import llm_client
 from bot.storage import conversation_storage
 
@@ -84,14 +84,14 @@ async def handle_question(message: Message):
         await update_status(random.choice(SEARCH_STATUSES))
         try:
             web_results = await asyncio.wait_for(
-                exa_search.search(user_query, num_results=config.EXA_NUM_RESULTS),
-                timeout=25.0
+                get_tavily_search(user_query),
+                timeout=20.0
             )
         except asyncio.TimeoutError:
-            web_results = "Поиск занял слишком много времени."
+            web_results = ""
         except Exception as e:
             logger.error(f"Search error: {e}")
-            web_results = "Ошибка поиска."
+            web_results = ""
 
         await update_status(random.choice(GENERATING_STATUSES))
         

@@ -12,8 +12,16 @@ class Config:
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
-    # Exa.ai
-    EXA_API_KEY: str | None = os.getenv("EXA_API_KEY")
+    # Tavily
+    TAVILY_API_KEY: str | None = os.getenv("TAVILY_API_KEY")
+    TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "5"))
+    TAVILY_SEARCH_DEPTH: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
+    TAVILY_INCLUDE_DOMAINS: list[str] = [
+        "consultant.ru",
+        "pravo.gov.ru",
+        "nalog.gov.ru",
+        "rbc.ru",
+    ]
 
     # Основная модель
     MODEL_NAME: str = os.getenv("MODEL_NAME", "google/gemini-2.0-flash-001")
@@ -34,7 +42,6 @@ class Config:
 
     # Настройки бота
     MAX_HISTORY_PAIRS: int = 2
-    EXA_NUM_RESULTS: int = 3
 
 # ВАЖНО: именно этот объект мы импортируем в main.py и других модулях
 config = Config()

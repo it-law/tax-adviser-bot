@@ -15,7 +15,7 @@ from aiogram.exceptions import TelegramBadRequest
 
 from bot.config import config
 from bot.router import detect_topic
-from bot.search import exa_search
+from bot.search import get_tavily_search
 from bot.llm import llm_client
 from bot.storage import conversation_storage
 
@@ -44,6 +44,22 @@ GENERATING_STATUSES = [
     "🤖 Анализирую найденные факты...",
     "💡 Готовлю рекомендации для вас...",
     "✍️ Пишу ответ...",
+]
+
+SEARCH_KEYWORDS = [
+    "санкц",
+    "ндпи",
+    "изменени",
+    "закон",
+    "новост",
+    "указ",
+    "постановлен",
+    "письмо",
+    "практик",
+    "источник",
+    "ссылка",
+    "фнс",
+    "минфин",
 ]
 
 @router.message(CommandStart())
@@ -169,6 +185,14 @@ def _split_message(text: str, limit: int = TELEGRAM_MAX_LEN) -> list[str]:
         parts.append(remaining)
     return parts
 
+def needs_web_search(user_query: str) -> bool:
+    q = user_query.strip().lower()
+    if not q:
+        return False
+    if len(q) > 50:
+        return True
+    return any(word in q for word in SEARCH_KEYWORDS)
+
 def _extract_urls(text: str) -> list[str]:
     if not text:
         return []
@@ -206,26 +230,19 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
         except Exception as e:
             logger.error(f"Error reading law file: {e}")
 
-        await update_status(random.choice(SEARCH_STATUSES))
-        try:
-            web_results = await asyncio.wait_for(
-                exa_search.search(user_query, num_results=config.EXA_NUM_RESULTS),
-                timeout=25.0
-            )
-        except asyncio.TimeoutError:
-            web_results = ""
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            web_results = ""
-
-        if isinstance(web_results, str):
-            lowered = web_results.lower()
-            if (
-                lowered.startswith("⚠️")
-                or lowered.startswith("ошибка")
-                or "не найдено" in lowered
-                or "поиск отключен" in lowered
-            ):
+        web_results = ""
+        if needs_web_search(user_query):
+            await update_status(random.choice(SEARCH_STATUSES))
+            try:
+                web_results = await asyncio.wait_for(
+                    get_tavily_search(user_query),
+                    timeout=20.0
+                )
+            except asyncio.TimeoutError:
+                logger.error("Tavily search timeout")
+                web_results = ""
+            except Exception as e:
+                logger.error(f"Tavily search error: {e}")
                 web_results = ""
 
         await update_status(random.choice(GENERATING_STATUSES))
