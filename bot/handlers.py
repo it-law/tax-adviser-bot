@@ -7,12 +7,9 @@ import logging
 import shutil
 import subprocess
 import tempfile
-from urllib.parse import urlparse
-import re
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
-from aiogram.exceptions import TelegramBadRequest
 
 from bot.config import config
 from bot.router import detect_topic
@@ -194,37 +191,15 @@ def needs_web_search(user_query: str) -> bool:
         return True
     return any(word in q for word in SEARCH_KEYWORDS)
 
-def _short_title(title: str, max_words: int = 4) -> str:
-    t = re.sub(r"[\\s\\-]+", " ", title.strip())
-    if not t:
-        return ""
-    words = t.split()
-    return " ".join(words[:max_words])
-
-def _source_label(title: str, url: str) -> str:
-    t = _short_title(title)
-    if t:
-        return t
-    try:
-        netloc = urlparse(url).netloc
-        return netloc.replace("www.", "") if netloc else "Источник"
-    except Exception:
-        return "Источник"
-
-def _extract_sources(text: str) -> list[tuple[str, str]]:
-    if not text:
-        return []
-    sources: list[tuple[str, str]] = []
-    seen = set()
-    for title, url in re.findall(r"Источник\\s+\\d+:\\s*([^\\n]+)\\nURL:\\s*(\\S+)", text):
-        u = url.rstrip(").,;!?:\"'”»")
-        t = _short_title(title)
-        key = (t, u)
-        if key in seen:
-            continue
-        seen.add(key)
-        sources.append((t, u))
-    return sources
+def _append_disclaimer(answer: str) -> str:
+    disclaimer = (
+        "\n\nОтвет сгенерирован ИИ и не является официальной консультацией. "
+        "Для принятия решений по сделкам, подаче деклараций или спорам с налоговыми органами "
+        "обратитесь к квалифицированному налоговому консультанту @CorporateLawyer."
+    )
+    if "Ответ сгенерирован ИИ" in answer:
+        return answer
+    return answer.rstrip() + disclaimer
 
 async def process_query(message: Message, user_query: str, extra_context: str = ""):
     user_id = message.from_user.id
@@ -292,13 +267,7 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
             )
         except asyncio.TimeoutError:
             answer = "⚠️ Модель не успела ответить вовремя. Попробуйте упростить вопрос."
-
-        sources_list = _extract_sources(web_results if isinstance(web_results, str) else "")
-        if sources_list and "источники" not in answer.lower():
-            sources = "<b>Источники:</b><br>" + "<br>".join(
-                f"• <a href=\"{u}\">{_source_label(t, u)}</a>" for t, u in sources_list
-            )
-            answer = answer.rstrip() + "\n\n" + sources
+        answer = _append_disclaimer(answer)
         
         conversation_storage.add_message(user_id, "user", user_query)
         conversation_storage.add_message(user_id, "assistant", answer)
