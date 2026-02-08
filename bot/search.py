@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 import aiohttp
@@ -31,6 +32,20 @@ class TavilySearch:
             "include_answer": False,
             "include_raw_content": False,
         }
+        start_date = (config.TAVILY_START_DATE or "").strip()
+        end_date = (config.TAVILY_END_DATE or "").strip()
+        if start_date:
+            payload["start_date"] = start_date
+            if end_date:
+                payload["end_date"] = end_date
+            else:
+                payload["end_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if payload.get("start_date") or payload.get("end_date"):
+            logger.info(
+                "Tavily date filter: "
+                f"{payload.get('start_date', '-')}"
+                f"..{payload.get('end_date', '-')}"
+            )
         if country:
             payload["country"] = country
 
@@ -87,6 +102,14 @@ def _short_title(title: str, max_words: int = 4) -> str:
     return " ".join(words[:max_words])
 
 
+def _extract_date(item: dict) -> str:
+    for key in ("published_date", "publishedDate", "last_updated", "lastUpdated", "date"):
+        value = item.get(key)
+        if value:
+            return str(value).strip()
+    return ""
+
+
 def format_results(results: list[dict]) -> str:
     formatted: list[str] = []
     for item in results:
@@ -96,11 +119,13 @@ def format_results(results: list[dict]) -> str:
         if content:
             content = content[:1500]
         label = _short_title(title) or "Источник"
+        date_value = _extract_date(item)
+        date_suffix = f" ({date_value})" if date_value else ""
         if url:
             link = f"<a href=\"{url}\">{label}</a>"
         else:
             link = label
-        formatted.append(f"{content}\n{link}".strip())
+        formatted.append(f"{content}\n{link}{date_suffix}".strip())
     return "\n\n---\n\n".join(formatted) if formatted else ""
 
 

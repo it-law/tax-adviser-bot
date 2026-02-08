@@ -17,6 +17,8 @@ class Config:
     TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "5"))
     TAVILY_SEARCH_DEPTH: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
     TAVILY_COUNTRY: str = os.getenv("TAVILY_COUNTRY", "Poland")
+    TAVILY_START_DATE: str = os.getenv("TAVILY_START_DATE", "2024-01-01")
+    TAVILY_END_DATE: str = os.getenv("TAVILY_END_DATE", "")
     TAVILY_INCLUDE_DOMAINS: list[str] = [
         "pravo.gov.ru",
         "consultant.ru",
