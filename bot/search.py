@@ -21,17 +21,18 @@ class TavilySearch:
             return ""
 
         logger.info(f"Tavily search triggered for: {query}")
-        country = getattr(config, "TAVILY_COUNTRY", "ru")
+        country = (getattr(config, "TAVILY_COUNTRY", "Russia") or "").strip()
         payload: dict[str, Any] = {
             "query": query,
             "search_depth": config.TAVILY_SEARCH_DEPTH,
             "max_results": config.TAVILY_MAX_RESULTS,
             "include_domains": config.TAVILY_INCLUDE_DOMAINS,
             "topic": "general",
-            "country": country,
             "include_answer": False,
             "include_raw_content": False,
         }
+        if country:
+            payload["country"] = country
 
         timeout = aiohttp.ClientTimeout(total=15)
         headers = {
@@ -43,9 +44,20 @@ class TavilySearch:
                 async with session.post(self.base_url, json=payload, headers=headers) as resp:
                     if resp.status != 200:
                         text = await resp.text()
-                        logger.error(f"Tavily error: {resp.status} {text}")
-                        return ""
-                    data = await resp.json()
+                        if resp.status == 400 and "Invalid country" in text and "country" in payload:
+                            logger.warning("Tavily country invalid, retrying without country filter.")
+                            payload.pop("country", None)
+                            async with session.post(self.base_url, json=payload, headers=headers) as resp2:
+                                if resp2.status != 200:
+                                    text2 = await resp2.text()
+                                    logger.error(f"Tavily error: {resp2.status} {text2}")
+                                    return ""
+                                data = await resp2.json()
+                        else:
+                            logger.error(f"Tavily error: {resp.status} {text}")
+                            return ""
+                    else:
+                        data = await resp.json()
         except asyncio.TimeoutError:
             logger.error("Tavily request timed out")
             return ""

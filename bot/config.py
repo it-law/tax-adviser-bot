@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     # Telegram
-    TELEGRAM_BOT_TOKEN: str | None = os.getenv("TELEGRAM_BOT_TOKEN")
+    TELEGRAM_BOT_TOKEN: str | None = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN")
 
     # OpenRouter
     OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
@@ -16,11 +16,12 @@ class Config:
     TAVILY_API_KEY: str | None = os.getenv("TAVILY_API_KEY")
     TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "5"))
     TAVILY_SEARCH_DEPTH: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
+    TAVILY_COUNTRY: str = os.getenv("TAVILY_COUNTRY", "Russia")
     TAVILY_INCLUDE_DOMAINS: list[str] = [
-        "consultant.ru",
         "pravo.gov.ru",
+        "consultant.ru",
         "nalog.gov.ru",
-        "rbc.ru",
+        "garant.ru",
     ]
 
     # Основная модель
