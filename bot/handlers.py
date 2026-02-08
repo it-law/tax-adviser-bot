@@ -232,6 +232,7 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
 
         web_results = ""
         if needs_web_search(user_query):
+            logger.info(f"Web search enabled for query: {user_query}")
             await update_status(random.choice(SEARCH_STATUSES))
             try:
                 web_results = await asyncio.wait_for(
@@ -244,6 +245,8 @@ async def process_query(message: Message, user_query: str, extra_context: str = 
             except Exception as e:
                 logger.error(f"Tavily search error: {e}")
                 web_results = ""
+        else:
+            logger.info("Web search skipped by router.")
 
         await update_status(random.choice(GENERATING_STATUSES))
         

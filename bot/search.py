@@ -17,15 +17,17 @@ class TavilySearch:
     async def search(self, query: str) -> str:
         """Поиск актуальной информации через Tavily."""
         if not self.api_key:
+            logger.warning("Tavily API key is missing; web search disabled.")
             return ""
 
+        logger.info(f"Tavily search triggered for: {query}")
         payload: dict[str, Any] = {
             "query": query,
             "search_depth": config.TAVILY_SEARCH_DEPTH,
             "max_results": config.TAVILY_MAX_RESULTS,
             "include_domains": config.TAVILY_INCLUDE_DOMAINS,
             "topic": "general",
-            "country": "russia",
+            "country": config.TAVILY_COUNTRY,
             "include_answer": False,
             "include_raw_content": False,
         }
@@ -52,8 +54,10 @@ class TavilySearch:
 
         results = data.get("results") or []
         if not results:
+            logger.info("Tavily search returned 0 results.")
             return ""
 
+        logger.info(f"Tavily search returned {len(results)} results.")
         formatted = []
         for idx, item in enumerate(results, 1):
             title = (item.get("title") or "").strip()
